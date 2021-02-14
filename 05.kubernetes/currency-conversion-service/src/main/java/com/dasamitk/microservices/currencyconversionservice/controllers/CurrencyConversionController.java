@@ -1,4 +1,4 @@
-package com.in28minutes.microservices.currencyconversionservice;
+package com.dasamitk.microservices.currencyconversionservice.controllers;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -12,16 +12,19 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
+import com.dasamitk.microservices.currencyconversionservice.beans.CurrencyConversionBean;
+import com.dasamitk.microservices.currencyconversionservice.proxies.ICurrencyExchangeProxy;
+
 @RestController
 public class CurrencyConversionController {
 	
 	private Logger logger = LoggerFactory.getLogger(CurrencyConversionController.class);
 	
 	@Autowired
-	private CurrencyExchangeProxy proxy;
+	private ICurrencyExchangeProxy proxy;
 	
 	@GetMapping("/currency-conversion/from/{from}/to/{to}/quantity/{quantity}")
-	public CurrencyConversion calculateCurrencyConversion(
+	public CurrencyConversionBean calculateCurrencyConversion(
 			@PathVariable String from,
 			@PathVariable String to,
 			@PathVariable BigDecimal quantity
@@ -34,13 +37,13 @@ public class CurrencyConversionController {
 		uriVariables.put("from",from);
 		uriVariables.put("to",to);
 		
-		ResponseEntity<CurrencyConversion> responseEntity = new RestTemplate().getForEntity
+		ResponseEntity<CurrencyConversionBean> responseEntity = new RestTemplate().getForEntity
 		("http://localhost:8000/currency-exchange/from/{from}/to/{to}", 
-				CurrencyConversion.class, uriVariables);
+				CurrencyConversionBean.class, uriVariables);
 		
-		CurrencyConversion currencyConversion = responseEntity.getBody();
+		CurrencyConversionBean currencyConversion = responseEntity.getBody();
 		
-		return new CurrencyConversion(currencyConversion.getId(), 
+		return new CurrencyConversionBean(currencyConversion.getId(), 
 				from, to, quantity, 
 				currencyConversion.getConversionMultiple(), 
 				quantity.multiply(currencyConversion.getConversionMultiple()), 
@@ -49,7 +52,7 @@ public class CurrencyConversionController {
 	}
 
 	@GetMapping("/currency-conversion-feign/from/{from}/to/{to}/quantity/{quantity}")
-	public CurrencyConversion calculateCurrencyConversionFeign(
+	public CurrencyConversionBean calculateCurrencyConversionFeign(
 			@PathVariable String from,
 			@PathVariable String to,
 			@PathVariable BigDecimal quantity
@@ -58,9 +61,9 @@ public class CurrencyConversionController {
 		//CHANGE-KUBERNETES
 		logger.info("calculateCurrencyConversionFeign called with {} to {} with {}", from, to, quantity);
 
-		CurrencyConversion currencyConversion = proxy.retrieveExchangeValue(from, to);
+		CurrencyConversionBean currencyConversion = proxy.retrieveExchangeValue(from, to);
 		
-		return new CurrencyConversion(currencyConversion.getId(), 
+		return new CurrencyConversionBean(currencyConversion.getId(), 
 				from, to, quantity, 
 				currencyConversion.getConversionMultiple(), 
 				quantity.multiply(currencyConversion.getConversionMultiple()), 
